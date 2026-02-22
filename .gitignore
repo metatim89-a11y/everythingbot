@@ -6,6 +6,7 @@ config/.env
 .hidden/*
 !.hidden/aliases.sh
 !.hidden/sstar.sh
+!.hidden/docs/CaptainsLog.md
 data/
 models/
 
