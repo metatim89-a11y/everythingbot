@@ -1,0 +1,21 @@
+# API Secrets & Configurations
+.env
+config/.env
+
+# The Passive Storage Trunks (No bloat, no backups in Git)
+.hidden/*
+!.hidden/aliases.sh
+!.hidden/sstar.sh
+data/
+models/
+
+# Package Managers
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# OS generated files
+.DS_Store
+Thumbs.db

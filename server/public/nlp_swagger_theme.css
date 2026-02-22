@@ -1,0 +1,179 @@
+/* Version: 1.00 */
+/* Custom CSS for FastAPI Swagger UI / ReDoc */
+
+:root {
+    --background-color: #1a202c; /* bg-gray-900 */
+    --surface-color: #2d3748; /* bg-gray-800 */
+    --text-color: #e2e8f0; /* text-gray-100 */
+    --accent-color: #63b3ed; /* text-blue-400 */
+    --border-color: #4a5568; /* border-gray-700 */
+    --code-bg: #282c34;
+    --code-text: #a9b7c6;
+}
+
+body {
+    background-color: var(--background-color) !important;
+    color: var(--text-color) !important;
+}
+
+/* Swagger UI overrides */
+.swagger-ui .topbar {
+    background-color: var(--surface-color) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+.swagger-ui .topbar-wrapper a.link {
+    color: var(--accent-color) !important;
+}
+
+.swagger-ui .topbar-wrapper .link:hover {
+    color: var(--text-color) !important;
+}
+
+.swagger-ui .scheme-container {
+    background-color: var(--surface-color) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+.swagger-ui .opblock .opblock-summary-path a,
+.swagger-ui .opblock .opblock-summary-path span,
+.swagger-ui .opblock .opblock-summary-description {
+    color: var(--text-color) !important;
+}
+
+.swagger-ui .opblock .opblock-summary-path {
+    color: var(--accent-color) !important;
+}
+
+.swagger-ui .opblock .opblock-tag {
+    background-color: var(--surface-color) !important;
+    color: var(--accent-color) !important;
+    border-color: var(--border-color) !important;
+}
+
+.swagger-ui .opblock .opblock-tag:hover {
+    background-color: var(--background-color) !important;
+}
+
+.swagger-ui .opblock-body {
+    background-color: var(--surface-color) !important;
+    color: var(--text-color) !important;
+}
+
+.swagger-ui .opblock-description-wrapper,
+.swagger-ui .markdown p,
+.swagger-ui .markdown li {
+    color: var(--text-color) !important;
+}
+
+.swagger-ui .code {
+    background-color: var(--code-bg) !important;
+    color: var(--code-text) !important;
+}
+
+.swagger-ui .parameter__name,
+.swagger-ui .parameter__type {
+    color: var(--text-color) !important;
+}
+
+.swagger-ui .model-title,
+.swagger-ui .model-title__text {
+    color: var(--accent-color) !important;
+}
+
+.swagger-ui .tab li button.active {
+    background-color: var(--background-color) !important;
+    color: var(--accent-color) !important;
+    border-color: var(--accent-color) !important;
+}
+
+.swagger-ui .tab li button {
+    background-color: var(--surface-color) !important;
+    color: var(--text-color) !important;
+    border-color: var(--border-color) !important;
+}
+
+.swagger-ui .btn {
+    background-color: var(--accent-color) !important;
+    color: var(--background-color) !important;
+}
+
+.swagger-ui .info .title {
+    color: var(--accent-color) !important;
+}
+
+.swagger-ui .info .description {
+    color: var(--text-color) !important;
+}
+
+/* ReDoc overrides */
+.redoc-wrap {
+    background-color: var(--background-color) !important;
+    color: var(--text-color) !important;
+}
+
+.menu-content {
+    background-color: var(--surface-color) !important;
+    border-right: 1px solid var(--border-color) !important;
+}
+
+.menu-content li a {
+    color: var(--text-color) !important;
+}
+
+.menu-content li a:hover,
+.menu-content li a.active {
+    background-color: var(--background-color) !important;
+    color: var(--accent-color) !important;
+}
+
+.api-content h1,
+.api-content h2,
+.api-content h3,
+.api-content h4,
+.api-content h5,
+.api-content h6 {
+    color: var(--accent-color) !important;
+}
+
+.api-content {
+    color: var(--text-color) !important;
+}
+
+.api-content code {
+    background-color: var(--code-bg) !important;
+    color: var(--code-text) !important;
+}
+
+.json-schema-viewer .object-key,
+.json-schema-viewer .string-value,
+.json-schema-viewer .number-value,
+.json-schema-viewer .boolean-value {
+    color: var(--text-color) !important;
+}
+
+.token.string {
+    color: #98c379 !important; /* Green for strings */
+}
+.token.property {
+    color: #e06c75 !important; /* Red for properties */
+}
+.token.punctuation {
+    color: #abb2bf !important; /* Gray for punctuation */
+}
+.token.number {
+    color: #d19a66 !important; /* Orange for numbers */
+}
+.token.boolean {
+    color: #c678dd !important; /* Purple for booleans */
+}
+.token.keyword {
+    color: #56b6c2 !important; /* Cyan for keywords */
+}
+.token.operator {
+    color: #56b6c2 !important;
+}
+.token.function {
+    color: #61afef !important; /* Blue for functions */
+}
+

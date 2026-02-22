@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>everythingbot MCP Server API Documentation</title>
+    <!-- Include Tailwind CSS directly for styling -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="flex h-screen bg-gray-900 text-gray-100 antialiased font-sans">
+    <!-- Sidebar - Mimicking Web UI's sidebar for consistency -->
+    <aside class="w-64 bg-gray-800 p-4 flex flex-col shadow-lg overflow-y-auto border-r border-gray-700">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold text-blue-400">everythingbot</h2>
+        </div>
+        <nav class="space-y-2 flex-grow">
+            <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">Documentation</h3>
+            <a href="#overview" class="block px-3 py-2 rounded-lg text-left text-gray-300 hover:bg-gray-700 hover:text-white transition duration-200">Overview</a>
+            <a href="#system-logging" class="block px-3 py-2 rounded-lg text-left text-gray-300 hover:bg-gray-700 hover:text-white transition duration-200">System Logging</a>
+            <a href="#user-quality-logging" class="block px-3 py-2 rounded-lg text-left text-gray-300 hover:bg-gray-700 hover:text-white transition duration-200">User Quality Logging</a>
+            <a href="#lessons-learned-logging" class="block px-3 py-2 rounded-lg text-left text-gray-300 hover:bg-gray-700 hover:text-white transition duration-200">Lessons Learned Logging</a>
+            <a href="#file-operations" class="block px-3 py-2 rounded-lg text-left text-gray-300 hover:bg-gray-700 hover:text-white transition duration-200">File Operations</a>
+            <a href="#browse-directory" class="block px-3 py-2 rounded-lg text-left text-gray-300 hover:bg-gray-700 hover:text-white transition duration-200">Browse Directory</a>
+            <a href="#chat-and-nlp" class="block px-3 py-2 rounded-lg text-left text-gray-300 hover:bg-gray-700 hover:text-white transition duration-200">Chat & NLP</a>
+            <a href="#session-management" class="block px-3 py-2 rounded-lg text-left text-gray-300 hover:bg-gray-700 hover:text-white transition duration-200">Session Management</a>
+            <a href="#training" class="block px-3 py-2 rounded-lg text-left text-gray-300 hover:bg-gray-700 hover:text-white transition duration-200">Training</a>
+        </nav>
+        <div class="mt-auto pt-4 border-t border-gray-700 space-y-2">
+            <a href="http://localhost:3001" class="block px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-center transition duration-200">Back to Web UI</a>
+            <a href="/docs/nlp" class="block px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg text-center transition duration-200">NLP Docs</a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+        <header class="h-16 border-b border-gray-700 flex items-center px-6 bg-gray-900/50 backdrop-blur-sm sticky top-0 z-10">
+            <h1 class="text-2xl font-bold text-blue-400">MCP Server API Reference</h1>
+        </header>
+
+        <section class="flex-1 overflow-y-auto p-6 space-y-8">
+            <article id="overview" class="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+                <h2 class="text-xl font-bold text-blue-400 mb-4">Overview</h2>
+                <p class="mb-4">The everythingbot Master Control Program (MCP) server acts as the central hub, orchestrating communication between the Web UI, NLP Service, and various data storage mechanisms. It exposes a RESTful API for managing chat sessions, logging events, handling file operations, and initiating AI training processes.</p>
+                <p>Base URL: <code class="bg-gray-700 px-2 py-1 rounded text-sm text-gray-200">http://localhost:3000</code></p>
+            </article>
+
+            <article id="system-logging" class="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+                <h2 class="text-xl font-bold text-blue-400 mb-4">System Logging</h2>
+                <p class="mb-2">Logs system events from all components to the <code>ai_only.db</code> <code>system_logs</code> table.</p>
+                <h3 class="text-lg font-semibold text-gray-200 mb-2"><code>POST /log</code></h3>
+                <p class="mb-2">Records a general system log entry.</p>
+                <div class="mb-2 text-gray-300"><strong>Request Body:</strong></div>
+                <pre class="bg-gray-700 p-4 rounded-md text-sm mb-4 whitespace-pre-wrap break-all"><code>{
+    "source": "string",  // e.g., "WEB_UI", "NLP_SERVICE", "MCP_SERVER"
+    "level": "string",   // e.g., "INFO", "WARN", "ERROR", "FATAL"
+    "message": "string",
+    "details": {}        // JSON object for additional context
+}</code></pre>
+                <p class="text-gray-300"><strong>Responses:</strong></p>
+                <pre class="bg-gray-700 p-4 rounded-md text-sm"><code>200 OK: { "success": true }</code></pre>
+            </article>
+
+            <article id="user-quality-logging" class="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+                <h2 class="text-xl font-bold text-blue-400 mb-4">User Quality Logging</h2>
+                <p class="mb-2">Records user feedback (ratings) to the <code>ai_only.db</code> <code>user_qualities</code> table.</p>
+                <h3 class="text-lg font-semibold text-gray-200 mb-2"><code>POST /log/user_quality</code></h3>
+                <p class="mb-2">Records user-provided feedback on bot responses.</p>
+                <div class="mb-2 text-gray-300"><strong>Request Body:</strong></div>
+                <pre class="bg-gray-700 p-4 rounded-md text-sm mb-4 whitespace-pre-wrap break-all"><code>{
+    "session_id": "integer",
+    "quality": "string", // e.g., "good", "bad"
+    "comment": "string"  // Optional: User's comment on the quality
+}</code></pre>
+                <p class="text-gray-300"><strong>Responses:</strong></p>
+                <pre class="bg-gray-700 p-4 rounded-md text-sm"><code>200 OK: { "success": true, "id": 1 }</code></pre>
+            </article>
+
+            <article id="lessons-learned-logging" class="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+                <h2 class="text-xl font-bold text-blue-400 mb-4">Lessons Learned Logging</h2>
+                <p class="mb-2">Records lessons learned by the AI to the <code>ai_only.db</code> <code>lessons_learned</code> table.</p>
+                <h3 class="text-lg font-semibold text-gray-200 mb-2"><code>POST /log/lesson_learned</code></h3>
+                <p class="mb-2">Records an AI-generated lesson.</p>
+                <div class="mb-2 text-gray-300"><strong>Request Body:</strong></div>
+                <pre class="bg-gray-700 p-4 rounded-md text-sm mb-4 whitespace-pre-wrap break-all"><code>{
+    "session_id": "integer",
+    "lesson": "string"   // The lesson learned by the AI
+}</code></pre>
+                <p class="text-gray-300"><strong>Responses:</strong></p>
+                <pre class="bg-gray-700 p-4 rounded-md text-sm"><code>200 OK: { "success": true, "id": 1 }</code></pre>
+            </article>
+
+            <article id="file-operations" class="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+                <h2 class="text-xl font-bold text-blue-400 mb-4">File Operations</h2>
+                <p class="mb-2">Enables CRUD operations on files within the <code>uploads/</code> directory.</p>
+
+                <h3 class="text-lg font-semibold text-gray-200 mb-2"><code>POST /upload</code></h3>
+                <p class="mb-2">Uploads a single file to the <code>uploads/</code> directory.</p>
+                <div class="mb-2 text-gray-300"><strong>Request Body:</strong></div>
+                <pre class="bg-gray-700 p-4 rounded-md text-sm mb-4 whitespace-pre-wrap break-all"><code>multipart/form-data (field name: 'file')</code></pre>
+                <p class="text-gray-300"><strong>Responses:</strong></p>
+                <pre class="bg-gray-700 p-4 rounded-md text-sm mb-4"><code>200 OK: { "success": true, "message": "File uploaded successfully.", "file": { ... } }</code></pre>
+
+                <h3 class="text-lg font-semibold text-gray-200 mb-2"><code>GET /files</code></h3>
+                <p class="mb-2">Lists all files in the <code>uploads/</code> directory.</p>
+                <p class="text-gray-300"><strong>Responses:</strong></p>
+                <pre class="bg-gray-700 p-4 rounded-md text-sm mb-4"><code>200 OK: { "files": ["file1.txt", "image.png"] }</code></pre>
+
+                <h3 class="text-lg font-semibold text-gray-200 mb-2"><code>GET /files/:filename</code></h3>
+                <p class="mb-2">Retrieves the content of a specific file.</p>
+                <p class="text-gray-300"><strong>Responses:</strong></p>
+                <pre class="bg-gray-700 p-4 rounded-md text-sm mb-4"><code>200 OK: "File content as plain text"</code></pre>
+
+                <h3 class="text-lg font-semibold text-gray-200 mb-2"><code>PUT /files/:filename</code></h3>
+                <p class="mb-2">Updates the content of an existing file or creates a new one.</p>
+                <div class="mb-2 text-gray-300"><strong>Request Body:</strong></div>
+                <pre class="bg-gray-700 p-4 rounded-md text-sm mb-4 whitespace-pre-wrap break-all"><code>{ "content": "string" }</code></pre>
+                <p class="text-gray-300"><strong>Responses:</strong></p>
+                <pre class="bg-gray-700 p-4 rounded-md text-sm mb-4"><code>200 OK: { "success": true, "message": "File updated successfully." }</code></pre>
+
+                <h3 class="text-lg font-semibold text-gray-200 mb-2"><code>DELETE /files/:filename</code></h3>
+                <p class="mb-2">Deletes a specific file from the <code>uploads/</code> directory.</p>
+                <p class="text-gray-300"><strong>Responses:</strong></p>
+                <pre class="bg-gray-700 p-4 rounded-md text-sm"><code>200 OK: { "success": true, "message": "File deleted successfully." }</code></pre>
+            </article>
+
+            <article id="browse-directory" class="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+                <h2 class="text-xl font-bold text-blue-400 mb-4">Browse Directory</h2>
+                <p class="mb-2">Allows listing contents of directories within the project root.</p>
+                <h3 class="text-lg font-semibold text-gray-200 mb-2"><code>GET /browse/:path?</code></h3>
+                <p class="mb-2">Lists files and directories at the specified <code>path</code> (relative to project root). If <code>path</code> is omitted, lists project root.</p>
+                <p class="text-gray-300"><strong>Responses:</strong></p>
+                <pre class="bg-gray-700 p-4 rounded-md text-sm"><code>200 OK: { "path": "string", "contents": [{ "name": "string", "is_directory": boolean, "is_file": boolean, "path": "string" }] }</code></pre>
+            </article>
+
+
+            <article id="chat-and-nlp" class="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+                <h2 class="text-xl font-bold text-blue-400 mb-4">Chat and NLP Integration</h2>
+                <h3 class="text-lg font-semibold text-gray-200 mb-2"><code>POST /chat</code></h3>
+                <p class="mb-2">Sends a message to the NLP service and logs the interaction. Used for main chat functionality.</p>
+                <div class="mb-2 text-gray-300"><strong>Request Body:</strong></div>
+                <pre class="bg-gray-700 p-4 rounded-md text-sm mb-4 whitespace-pre-wrap break-all"><code>{
+    "message": "string",
+    "session_id": "integer" // Current chat session ID
+}</code></pre>
+                <p class="text-gray-300"><strong>Responses:</strong></p>
+                <pre class="bg-gray-700 p-4 rounded-md text-sm"><code>200 OK: { "response": "string", "message_id": 1, "session_id": 1 }</code></pre>
+            </article>
+
+            <article id="session-management" class="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+                <h2 class="text-xl font-bold text-blue-400 mb-4">Session Management</h2>
+                <h3 class="text-lg font-semibold text-gray-200 mb-2"><code>GET /sessions</code></h3>
+                <p class="mb-2">Retrieves a list of all chat sessions.</p>
+                <p class="text-gray-300"><strong>Responses:</strong></p>
+                <pre class="bg-gray-700 p-4 rounded-md text-sm mb-4"><code>200 OK: { "sessions": [{ "id": 1, "created_at": "datetime", "name": "string" }] }</code></pre>
+
+                <h3 class="text-lg font-semibold text-gray-200 mb-2"><code>GET /history/:session_id</code></h3>
+                <p class="mb-2">Retrieves chat history for a specific session.</p>
+                <p class="text-gray-300"><strong>Responses:</strong></p>
+                <pre class="bg-gray-700 p-4 rounded-md text-sm mb-4"><code>200 OK: { "history": [{ "id": 1, "session_id": 1, "timestamp": "datetime", "user_input": "string", "bot_response": "string", "event": "string", "rating": "string" }] }</code></pre>
+
+                <h3 class="text-lg font-semibold text-gray-200 mb-2"><code>POST /clear-history/:session_id</code></h3>
+                <p class="mb-2">Clears chat history for a specific session.</p>
+                <p class="text-gray-300"><strong>Responses:</strong></p>
+                <pre class="bg-gray-700 p-4 rounded-md text-sm"><code>200 OK: { "success": true, "message": "Chat history cleared for session 1" }</code></pre>
+            </article>
+
+            <article id="training" class="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+                <h2 class="text-xl font-bold text-blue-400 mb-4">Training</h2>
+                <h3 class="text-lg font-semibold text-gray-200 mb-2"><code>POST /rate</code></h3>
+                <p class="mb-2">Records a rating for a specific bot message.</p>
+                <div class="mb-2 text-gray-300"><strong>Request Body:</strong></div>
+                <pre class="bg-gray-700 p-4 rounded-md text-sm mb-4 whitespace-pre-wrap break-all"><code>{
+    "message_id": "integer",
+    "rating": "string" // e.g., "good", "bad"
+}</code></pre>
+                <p class="text-gray-300"><strong>Responses:</strong></p>
+                <pre class="bg-gray-700 p-4 rounded-md text-sm mb-4"><code>200 OK: { "success": true, "message": "Message 1 rated good" }</code></pre>
+
+                <h3 class="text-lg font-semibold text-gray-200 mb-2"><code>POST /train</code></h3>
+                <p class="mb-2">Initiates the AI training process using rated conversations.</p>
+                <p class="text-gray-300"><strong>Responses:</strong></p>
+                <pre class="bg-gray-700 p-4 rounded-md text-sm"><code>200 OK: { "success": true, "message": "Training initiated: ..." }</code></pre>
+            </article>
+        </section>
+    </main>
+</body>
+</html>

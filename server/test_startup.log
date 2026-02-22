@@ -1,0 +1,17 @@
+STARTUP: MCP Server script started loading...
+STARTUP: express loaded
+STARTUP: body-parser loaded
+STARTUP: sqlite3 loaded
+STARTUP: All modules loaded successfully.
+STARTUP: Database paths: 
+ AI_ONLY: /home/tim/projects/everythingbot/data/ai_only.db
+ TRAINING: /home/tim/projects/everythingbot/data/training.db
+STARTUP: Initializing databases...
+STARTUP: Initializing AI Only DB...
+STARTUP: Initializing Training DB...
+STARTUP: Training DB initialized.
+STARTUP: AI Only DB initialized.
+STARTUP: Initialization complete. Starting server...
+STARTUP: MCP Server listening on http://localhost:3000
+[2026-02-20T00:42:39.059Z] [INFO] [LAUNCH_SCRIPT_WEB_UI] Starting everythingbot Web UI (React dev server) on port 3001... {}
+[2026-02-20T00:42:39.086Z] [ERROR] [LAUNCH_SCRIPT_WEB_UI] everythingbot Web UI crashed with exit code 1. Restarting in 5 seconds... {}
