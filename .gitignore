@@ -1,6 +1,16 @@
 # API Secrets & Configurations
 .env
+**/.env
 config/.env
+
+# Auth and local state
+**/fb_auth.json
+*.sqlite
+*.sqlite3
+*.db
+*.log
+**/LOGS/
+LOGS/
 
 # The Passive Storage Trunks (No bloat, no backups in Git)
 .hidden/*
@@ -11,9 +21,12 @@ data/
 models/
 
 # Package Managers
-node_modules/
-.venv/
-__pycache__/
+**/node_modules
+node_modules
+**/.venv
+.venv
+**/__pycache__
+__pycache__
 *.pyc
 *.pyo
 

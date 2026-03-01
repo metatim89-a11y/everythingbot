@@ -1,6 +1,7 @@
-// Version: 1.02
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Rnd } from 'react-rnd';
+import AgentWidget from './AgentWidget';
 
 const MCP_SERVER_URL = 'http://localhost:3000';
 
@@ -40,6 +41,7 @@ const DatabaseExplorer = ({ isOpen, onClose, theme, isEmbedded = false }) => {
 
   useEffect(() => {
     if (isOpen) fetchTables();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, dbName]);
 
   if (!isOpen) return null;
@@ -56,6 +58,7 @@ const DatabaseExplorer = ({ isOpen, onClose, theme, isEmbedded = false }) => {
           >
             <option value="training">training.db</option>
             <option value="ai_only">ai_only.db</option>
+            <option value="scraper_results">scraper_results.db</option>
           </select>
         </div>
         {!isEmbedded && <button onClick={onClose} className="text-2xl opacity-50 hover:opacity-100 transition-opacity">×</button>}
@@ -112,6 +115,20 @@ const DatabaseExplorer = ({ isOpen, onClose, theme, isEmbedded = false }) => {
           )}
         </div>
       </div>
+
+      {/* Hardcoded Agent injection for DatabaseExplorer until it runs entirely on WindowManager */}
+      <Rnd
+        default={{ x: 750, y: 50, width: 350, height: 500 }}
+        bounds="parent"
+        className={`pointer-events-auto rounded-xl shadow-2xl flex flex-col overflow-hidden border-orange-500/30 border bg-slate-900/80 backdrop-blur-md`}
+      >
+        <div className="p-2 cursor-move flex justify-between items-center bg-orange-900/40 text-orange-300 border-b border-orange-500/30">
+          <h3 className="text-xs font-bold uppercase tracking-wider">🧠 db-admin Omni-Agent</h3>
+        </div>
+        <div className="flex-1 p-4 overflow-y-auto cancel-drag">
+          <AgentWidget context={{ type: 'DATABASE', dbName, tables, selectedTable, data }} theme={theme} />
+        </div>
+      </Rnd>
     </div>
   );
 

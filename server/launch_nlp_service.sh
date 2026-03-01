@@ -5,9 +5,9 @@
 SERVICE_NAME="NLP Service"
 PORT=8000
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-PROJECT_ROOT="$SCRIPT_DIR"
-OUT_DIR="$PROJECT_ROOT/LOGS/nlp_service/out"
-ERR_DIR="$PROJECT_ROOT/LOGS/nlp_service/err"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+OUT_DIR="$PROJECT_ROOT/.hidden/LOGS/nlp_service/out"
+ERR_DIR="$PROJECT_ROOT/.hidden/LOGS/nlp_service/err"
 
 log_event() {
     local level=$1
@@ -26,22 +26,10 @@ sleep 1
 
 log_event "INFO" "Starting $SERVICE_NAME Singleton Supervisor."
 
-if command -v gnome-terminal >/dev/null 2>&1 && [ -n "$DISPLAY" ]; then
-    gnome-terminal --tab --title="everythingbot $SERVICE_NAME" -- bash -c "
-        (cd $PROJECT_ROOT && while true; do 
-            echo '--- Starting everythingbot NLP Service (FastAPI) ---';
-            $PROJECT_ROOT/.venv/bin/python3 -m uvicorn app.nlp_service:app --host 0.0.0.0 --port $PORT;
-            EXIT_CODE=\$?
-            echo \"NLP Service exited with code \$EXIT_CODE. Restarting in 5s...\";
-            sleep 5;
-        done) 2> >(tee -a $ERR_DIR/nlp_service_stderr.log) | tee -a $OUT_DIR/nlp_service_stdout.log
-    "
-else
-    (cd $PROJECT_ROOT && while true; do 
-        $PROJECT_ROOT/.venv/bin/python3 -m uvicorn app.nlp_service:app --host 0.0.0.0 --port $PORT;
-        sleep 5;
-    done) 1>> $OUT_DIR/nlp_service_stdout.log 2>> $ERR_DIR/nlp_service_stderr.log &
-fi
+(cd $PROJECT_ROOT && while true; do 
+    nohup $PROJECT_ROOT/.venv/bin/python3 -m uvicorn app.nlp_service:app --host 0.0.0.0 --port $PORT 1>> "$OUT_DIR/nlp_service_stdout.log" 2>> "$ERR_DIR/nlp_service_stderr.log" < /dev/null;
+    sleep 5;
+done &)
 
 echo "Performing port check..."
 for i in {1..20}; do

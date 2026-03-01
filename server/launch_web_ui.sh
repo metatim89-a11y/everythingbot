@@ -5,9 +5,9 @@
 SERVICE_NAME="Web UI"
 PORT=3001
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-PROJECT_ROOT="$SCRIPT_DIR"
-OUT_DIR="$PROJECT_ROOT/LOGS/web_ui/out"
-ERR_DIR="$PROJECT_ROOT/LOGS/web_ui/err"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+OUT_DIR="$PROJECT_ROOT/.hidden/LOGS/web_ui/out"
+ERR_DIR="$PROJECT_ROOT/.hidden/LOGS/web_ui/err"
 
 log_event() {
     local level=$1
@@ -28,22 +28,11 @@ sleep 1
 log_event "INFO" "Starting $SERVICE_NAME Singleton Supervisor (PORT: $PORT)."
 
 # Add BROWSER=none to prevent it from trying to open a browser window automatically
-if command -v gnome-terminal >/dev/null 2>&1 && [ -n "$DISPLAY" ]; then
-    gnome-terminal --tab --title="everythingbot $SERVICE_NAME" -- bash -c "
-        (cd $PROJECT_ROOT/web && export BROWSER=none && PORT=$PORT npm run start) 2> >(tee -a $ERR_DIR/web_ui_stderr.log) | tee -a $OUT_DIR/web_ui_stdout.log;
-        echo '----------------------------------------';
-        echo '$SERVICE_NAME process has stopped.';
-        echo 'Check LOGS/web_ui/ for details.';
-        echo 'Press ENTER to close this tab...';
-        read
-    "
-else
-    # In background mode, use nohup and ensure BROWSER=none
-    (cd $PROJECT_ROOT/web && export BROWSER=none && PORT=$PORT nohup npm run start) 1>> $OUT_DIR/web_ui_stdout.log 2>> $ERR_DIR/web_ui_stderr.log &
-fi
+# In background mode, use CI=true for stability and proper decoupling
+(cd $PROJECT_ROOT/web && export BROWSER=none && export CI=true && nohup npm start 1>> "$OUT_DIR/web_ui_stdout.log" 2>> "$ERR_DIR/web_ui_stderr.log" < /dev/null &)
 
-echo "Performing port check..."
-for i in {1..20}; do
+echo "Performing port check (waiting up to 120s)..."
+for i in {1..40}; do
     if lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null ; then
         log_event "INFO" "$SERVICE_NAME is UP and listening on port $PORT."
         exit 0
@@ -51,7 +40,7 @@ for i in {1..20}; do
     sleep 3
 done
 
-log_event "ERROR" "$SERVICE_NAME failed to start on port $PORT within 60 seconds."
+log_event "ERROR" "$SERVICE_NAME failed to start on port $PORT within 120 seconds. Check $OUT_DIR/web_ui_stdout.log for errors."
 exit 1
 
 # (Made by: Gemini CLI)

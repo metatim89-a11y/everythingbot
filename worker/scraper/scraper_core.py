@@ -115,8 +115,8 @@ async def run_scraper(profile_name: str) -> None:
                 # Check if any keyword is in the text (case-insensitive)
                 matches = [kw for kw in keywords if kw.lower() in text.lower()]
                 
-                # If we matched, or if we just want to grab a few samples to prove it works
-                if matches or leads_found < 3: 
+                # Only save if there's a strict keyword match
+                if matches: 
                     # Insert into our DB
                     c.execute('''
                         INSERT INTO scraped_leads (profile_name, platform, content, url)

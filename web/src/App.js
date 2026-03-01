@@ -1,4 +1,4 @@
-// Version: 1.48
+// Version: 1.50
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
@@ -10,6 +10,8 @@ import ChatDashboard from './components/ChatDashboard';
 import ScraperPanel from './components/ScraperPanel';
 import FileExplorer from './components/FileExplorer';
 import DatabaseExplorer from './components/DatabaseExplorer';
+import JsonExplorer from './components/JsonExplorer';
+import CommandCenter from './components/CommandCenter';
 
 const MCP_SERVER_URL = 'http://localhost:3000';
 
@@ -27,6 +29,7 @@ function DashboardLayout() {
   const [sessions, setSessions] = useState([]);
   const [currentSessionId, setCurrentSessionId] = useState(null);
   const [currentTheme, setCurrentTheme] = useState('starryNight');
+  const [uiConfig, setUiConfig] = useState(null);
   const [isSettingsOpen, setSettingsOpen] = useState(false);
   const [isQuickSettingsOpen, setQuickSettingsOpen] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -34,9 +37,23 @@ function DashboardLayout() {
   const [isConnected, setIsConnected] = useState(true);
   const [maxTokens, setMaxTokens] = useState(128);
   const [temperature, setTemperature] = useState(0.7);
+  const [proposal, setProposal] = useState(null);
+  const [isProcessingProposal, setIsProcessingProposal] = useState(false);
 
   const location = useLocation();
-  const theme = THEMES[currentTheme] || THEMES.starryNight;
+
+  useEffect(() => {
+    const fetchUiConfig = async () => {
+      try {
+        const res = await axios.get(`${MCP_SERVER_URL}/api/ui/config`);
+        setUiConfig(res.data);
+      } catch (e) { }
+    };
+    fetchUiConfig();
+  }, []);
+
+  const baseTheme = THEMES[currentTheme] || THEMES.starryNight;
+  const theme = uiConfig?.theme ? { ...baseTheme, ...uiConfig.theme } : baseTheme;
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -44,9 +61,9 @@ function DashboardLayout() {
   }, []);
 
   useEffect(() => {
-    const checkStatus = async () => {
+    const checkInitialStatus = async () => {
       try {
-        const healthRes = await axios.get(`${MCP_SERVER_URL}/health`, { timeout: 2000 });
+        await axios.get(`${MCP_SERVER_URL}/health`, { timeout: 2000 });
         setIsConnected(true);
         const configRes = await axios.get(`${MCP_SERVER_URL}/config`);
         setMaxTokens(configRes.data.max_new_tokens);
@@ -55,9 +72,27 @@ function DashboardLayout() {
         setIsConnected(false);
       }
     };
-    checkStatus();
-    const interval = setInterval(checkStatus, 10000);
-    return () => clearInterval(interval);
+    checkInitialStatus();
+
+    const eventSource = new EventSource(`${MCP_SERVER_URL}/api/events`);
+    
+    eventSource.addEventListener('metrics', (event) => {
+      setIsConnected(true);
+    });
+
+    eventSource.onerror = () => {
+      setIsConnected(false);
+    };
+
+    return () => eventSource.close();
+  }, []);
+
+  useEffect(() => {
+    const interceptor = axios.interceptors.request.use((config) => {
+      config.headers['x-ai-only-token'] = 'e89b3f94-7a1a-4f5c-8d2b-6c4e1f7a8b9c';
+      return config;
+    });
+    return () => axios.interceptors.request.eject(interceptor);
   }, []);
 
   const updateAIConfig = async (updates) => {
@@ -166,8 +201,33 @@ function DashboardLayout() {
           id: res.data.message_id,
           timestamp: res.data.timestamp || new Date().toISOString()
         }]);
+
+        setTimeout(async () => {
+          if (isProcessingProposal || proposal) return;
+          try {
+            const propRes = await axios.get(`${MCP_SERVER_URL}/proposals/latest`);
+            if (propRes.data.success && propRes.data.has_proposal) {
+              setProposal({ task: propRes.data.task, procedures: propRes.data.procedures });
+            }
+          } catch (e) { }
+        }, 1500);
       }
     } catch (e) { console.error(e); } finally { setLoading(false); }
+  };
+
+  const handleApproveProposal = async () => {
+    setIsProcessingProposal(true);
+    try {
+      const res = await axios.post(`${MCP_SERVER_URL}/proposals/approve`);
+      if (!res.data.success) alert("Error: " + res.data.error);
+    } catch (e) { alert("Error: " + e.message); } finally { setIsProcessingProposal(false); setProposal(null); }
+  };
+
+  const handleRejectProposal = async () => {
+    setIsProcessingProposal(true);
+    try {
+      await axios.post(`${MCP_SERVER_URL}/proposals/reject`);
+    } catch (e) { alert("Error: " + e.message); } finally { setIsProcessingProposal(false); setProposal(null); }
   };
 
   const currentSessionName = sessions.find(s => s.id === currentSessionId)?.name || 'Ready';
@@ -227,8 +287,14 @@ function DashboardLayout() {
 
         <div className="flex items-center justify-end gap-4 w-64 relative">
           {/* React Router Navigation Links */}
+          <Link to="/docs/commandcenter" className={`transition-all ${isActive('/docs/commandcenter')}`} title="System Command Center">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+          </Link>
           <Link to="/hunter" className={`transition-all ${isActive('/hunter')}`} title="Hunters Console">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+          </Link>
+          <Link to="/json" className={`transition-all ${isActive('/json')}`} title="Live JSON Editor">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
           </Link>
           <Link to="/files" className={`transition-all ${isActive('/files')}`} title="Files">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
@@ -237,13 +303,12 @@ function DashboardLayout() {
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>
           </Link>
 
-          <div className="relative ml-2">
+          <div className="relative ml-2 z-50">
             <button
               onClick={() => setQuickSettingsOpen(!isQuickSettingsOpen)}
               className={`w-3 h-3 rounded-full ${indicatorColor} ${indicatorAnim} cursor-pointer shadow-[0_0_10px_rgba(34,197,94,0.5)]`}
               title={isConnected ? (loading ? "AI is Thinking..." : "Connected") : "Disconnected"}
             />
-            {/* Quick Settings Tooltip (omitted for brevity, remains unchanged ideally) */}
           </div>
         </div>
       </header>
@@ -262,26 +327,14 @@ function DashboardLayout() {
               {sessions.map(s => (
                 <div key={s.id} className="relative flex items-center h-12 w-full rounded-xl border border-transparent hover:border-white/10 hover:bg-white/5 transition-all group/sid">
                   <div onClick={() => switchSession(s.id)} className={`cursor-pointer transition-all flex items-center w-full h-full rounded-xl ${currentSessionId === s.id ? 'opacity-100 text-white drop-shadow-md bg-white/10' : 'opacity-60 hover:opacity-100'}`} title={s.name}>
-
-                    {/* Fixed 42px width for the icon area to perfectly align with collapsed sidebar */}
                     <div className="w-[46px] flex justify-center shrink-0">
                       <span className="invert-theme-bold">{s.name.substring(0, 4)}</span>
                     </div>
-
-                    {/* The full text that simply gets revealed as the container expands */}
-                    <span className="font-bold whitespace-nowrap text-sm truncate pr-2 box-border">
-                      {s.name}
-                    </span>
+                    <span className="font-bold whitespace-nowrap text-sm truncate pr-2 box-border">{s.name}</span>
                   </div>
-
-                  {/* Action Buttons */}
                   <div className="hidden group-hover:flex items-center gap-1 opacity-0 group-hover/sid:opacity-100 transition-opacity absolute right-1 bg-black/60 p-1 rounded-lg backdrop-blur-md">
-                    <button onClick={() => handleArchiveSession(s.id)} className="text-yellow-500 font-black hover:text-yellow-400 p-1 rounded hover:bg-white/10" title="Archive">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
-                    </button>
-                    <button onClick={() => handleDeleteSession(s.id)} className="text-red-500 font-black hover:text-red-400 p-1 rounded hover:bg-white/10" title="Delete">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    </button>
+                    <button onClick={() => handleArchiveSession(s.id)} className="text-yellow-500 font-black hover:text-yellow-400 p-1 rounded hover:bg-white/10" title="Archive"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg></button>
+                    <button onClick={() => handleDeleteSession(s.id)} className="text-red-500 font-black hover:text-red-400 p-1 rounded hover:bg-white/10" title="Delete"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                   </div>
                 </div>
               ))}
@@ -291,15 +344,10 @@ function DashboardLayout() {
               <div className="text-[10px] font-black uppercase tracking-widest text-center opacity-30 mb-4 whitespace-nowrap">Themes</div>
               {Object.keys(THEMES).map(t => (
                 <button key={t} onClick={() => { setCurrentTheme(t); }}
-                  className={`relative flex items-center h-12 w-full rounded-xl border transition-all overflow-hidden
-                  ${currentTheme === t ? 'bg-white/10 border-white/20 shadow-lg' : 'border-transparent hover:bg-white/5 opacity-60 hover:opacity-100'}`}>
-
-                  {/* Fixed 46px width for icon area */}
+                  className={`relative flex items-center h-12 w-full rounded-xl border transition-all overflow-hidden ${currentTheme === t ? 'bg-white/10 border-white/20 shadow-lg' : 'border-transparent hover:bg-white/5 opacity-60 hover:opacity-100'}`}>
                   <div className="w-[46px] flex justify-center shrink-0">
                     <div className={`w-4 h-4 rounded-full border border-white/20 ${THEMES[t].bg}`}></div>
                   </div>
-
-                  {/* Full label revealed by expansion */}
                   <span className="text-xs font-bold truncate whitespace-nowrap">{THEMES[t].name}</span>
                 </button>
               ))}
@@ -313,47 +361,35 @@ function DashboardLayout() {
         </div>
       </aside>
 
-      {/* The Dynamic Content Area */}
       <div className="flex-1 w-full h-full pt-20 overflow-hidden relative">
         <Routes>
-          <Route path="/" element={
-            <ChatDashboard
-              messages={messages}
-              theme={theme}
-              isTransitioning={isTransitioning}
-              currentSessionId={currentSessionId}
-              handleSendMessage={handleSendMessage}
-              handleDeleteMessage={handleDeleteMessage}
-              setSettingsOpen={setSettingsOpen}
-              isSettingsOpen={isSettingsOpen}
-            />
-          } />
-
-          <Route path="/hunter" element={
-            <div className="w-full h-full p-8 overflow-y-auto custom-scrollbar">
-              <ScraperPanel theme={theme} />
-            </div>
-          } />
-
-          <Route path="/database" element={
-            <div className="w-full h-full">
-              <DatabaseExplorer isOpen={true} onClose={() => { }} theme={theme} isEmbedded={true} />
-            </div>
-          } />
-
-          <Route path="/files" element={
-            <div className="w-full h-full">
-              <FileExplorer isOpen={true} onClose={() => { }} theme={theme} currentSessionId={currentSessionId} isEmbedded={true} />
-            </div>
-          } />
+          <Route path="/" element={<ChatDashboard messages={messages} theme={theme} isTransitioning={isTransitioning} currentSessionId={currentSessionId} handleSendMessage={handleSendMessage} handleDeleteMessage={handleDeleteMessage} setSettingsOpen={setSettingsOpen} isSettingsOpen={isSettingsOpen} />} />
+          <Route path="/docs/commandcenter" element={<CommandCenter theme={theme} />} />
+          <Route path="/hunter" element={<div className="w-full h-full p-8 overflow-y-auto custom-scrollbar"><ScraperPanel theme={theme} /></div>} />
+          <Route path="/json" element={<div className="w-full h-full"><JsonExplorer isOpen={true} onClose={() => { }} theme={theme} isEmbedded={true} /></div>} />
+          <Route path="/database" element={<div className="w-full h-full"><DatabaseExplorer isOpen={true} onClose={() => { }} theme={theme} isEmbedded={true} /></div>} />
+          <Route path="/files" element={<div className="w-full h-full"><FileExplorer isOpen={true} onClose={() => { }} theme={theme} currentSessionId={currentSessionId} isEmbedded={true} /></div>} />
         </Routes>
       </div>
 
+      <AnimatePresence>
+        {proposal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[999] bg-black/80 flex items-center justify-center p-8 backdrop-blur-sm">
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className={`w-full max-w-4xl max-h-full flex flex-col rounded-2xl glass-3d bevel-border ${theme.bg} overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)]`}>
+              <div className={`p-4 border-b border-white/20 flex justify-between items-center ${theme.header}`}><div className="flex items-center gap-3"><span className="text-green-400 font-bold animate-pulse">●</span><h2 className="text-lg font-black tracking-widest uppercase">New Bot Proposal</h2></div></div>
+              <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 custom-scrollbar text-sm opacity-90">
+                <div><h3 className="text-xs font-black opacity-50 uppercase tracking-widest mb-2">task.md</h3><pre className="bg-black/40 p-4 rounded-xl border border-white/10 whitespace-pre-wrap font-mono relative">{proposal.task}</pre></div>
+                <div><h3 className="text-xs font-black opacity-50 uppercase tracking-widest mb-2">procedures.txt</h3><pre className="bg-black/40 p-4 rounded-xl border border-white/10 whitespace-pre-wrap font-mono relative text-green-300">{proposal.procedures}</pre></div>
+              </div>
+              <div className={`p-4 border-t border-white/20 flex justify-end gap-3 ${theme.header}`}><button onClick={handleRejectProposal} disabled={isProcessingProposal} className="px-6 py-2 rounded-xl border border-red-500/50 text-red-400 hover:bg-red-500/20 font-bold transition-all disabled:opacity-50">REJECT</button><button onClick={handleApproveProposal} disabled={isProcessingProposal} className="px-6 py-2 rounded-xl bg-green-500 hover:bg-green-400 text-black font-black transition-all shadow-[0_0_15px_rgba(34,197,94,0.4)] hover:shadow-[0_0_25px_rgba(34,197,94,0.6)] disabled:opacity-50">{isProcessingProposal ? 'EXECUTING...' : 'APPROVE & EXECUTE'}</button></div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-// Wrap the App in BrowserRouter here
 export default function App() {
   return (
     <BrowserRouter>

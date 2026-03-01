@@ -1,0 +1,5 @@
+# Startup Errors & Diagnostics
+*Generated on: Sun Feb 22 10:04:58 PM CST 2026*
+```text
+```
+/home/tim/projects/everythingbot/lab/source/server/launch_web_ui.sh: line 32: 36020 Killed                  nohup npm start < /dev/null >> "$OUT_DIR/web_ui_stdout.log" 2>> "$ERR_DIR/web_ui_stderr.log"
